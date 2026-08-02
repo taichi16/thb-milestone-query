@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>省道里程樁查詢系統</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+          
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 載入與初始化覆蓋層 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-card">
+            <div class="spinner-large"></div>
+            <h2 id="loading-title">正在載入系統資料</h2>
+            <p id="loading-subtitle">首次載入將下載約 6MB 的里程數據，隨後開啟只需數十毫秒...</p>
+            <div class="progress-bar-container">
+                <div id="loading-progress" class="progress-bar"></div>
+            </div>
+            <div id="loading-status" class="loading-status">準備載入...</div>
+        </div>
+    </div>
+
+    <!-- 主應用程式容器 -->
+    <div id="app-container" class="app-container">
+        
+        <!-- 左側面板 (Desktop 側邊欄 / Mobile 列表頁) -->
+        <aside id="left-panel" class="left-panel">
+            <header class="app-header">
+                <div class="logo-area">
+                    <i data-lucide="milestone" class="logo-icon"></i>
+                    <div>
+                        <h1>省道里程樁查詢</h1>
+                        <span class="sub-title">自動更新 / 隨時導航</span>
+                    </div>
+                </div>
+                <div class="update-section">
+                    <button id="update-btn" class="btn btn-secondary btn-icon" title="檢查更新">
+                        <i data-lucide="refresh-cw" id="update-icon"></i>
+                        <span class="btn-text">檢查更新</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="version-status" id="version-status">
+                資料狀態：偵測中...
+            </div>
+
+            <!-- 分頁切換鈕 (側邊欄內部) -->
+            <nav class="panel-tabs">
+                <button id="tab-roads" class="panel-tab active" data-tab="roads">
+                    <i data-lucide="route"></i>
+                    <span>省道列表</span>
+                </button>
+                <button id="tab-search" class="panel-tab" data-tab="search">
+                    <i data-lucide="search"></i>
+                    <span>快速搜尋</span>
+                </button>
+                <button id="tab-about" class="panel-tab" data-tab="about">
+                    <i data-lucide="info"></i>
+                    <span>關於本站</span>
+                </button>
+            </nav>
+
+            <!-- 列表與內容區域 -->
+            <div class="panel-content">
+                <!-- 省道列表分頁 -->
+                <div id="content-roads" class="tab-content active">
+                    <!-- 搜尋省道名稱 -->
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="road-filter-input" placeholder="篩選省道公路... (例如: 台1, 台9)">
+                        <button id="road-filter-clear" class="clear-btn hide"><i data-lucide="x"></i></button>
+                    </div>
+                    <!-- 省道公路清單 -->
+                    <ul id="road-list" class="interactive-list">
+                        <!-- 動態生成 -->
+                    </ul>
+                </div>
+
+                <!-- 快速搜尋分頁 -->
+                <div id="content-search" class="tab-content">
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="global-search-input" placeholder="搜尋公路、里程、縣市或鄉鎮...">
+                        <button id="global-search-clear" class="clear-btn hide"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="search-tip">
+                        提示：可輸入「台1 45K」、「台9 花蓮」或「中正區」進行交叉搜尋。
+                    </div>
+                    <div class="search-results-summary" id="search-results-summary">
+                        請輸入關鍵字開始搜尋
+                    </div>
+                    <!-- 搜尋結果清單 -->
+                    <ul id="search-result-list" class="interactive-list">
+                        <!-- 動態生成 -->
+                    </ul>
+                </div>
+
+                <!-- 關於本站分頁 -->
+                <div id="content-about" class="tab-content about-section">
+                    <h3>省道里程座標查詢系統</h3>
+                    <p>本系統將交通部公路局每月更新之「省道里程坐標（里程牌標誌）」開放資料（資料集 ID: 7040），自動打包並導入快取，提供使用者快速查詢與導航定位功能。</p>
+                    
+                    <div class="info-card">
+                        <h4>系統特色</h4>
+                        <ul>
+                            <li><strong>全自動同步</strong>：每日定時透過 GitHub Actions 自主比對政府最新版本，若有變更即自動拉取，確保資料最新。</li>
+                            <li><strong>IndexedDB 高速快取</strong>：採用瀏覽器資料庫快取 30,000+ 筆資料，首次加載後，後續開啟秒級呈現，且耗費極低流量。</li>
+                            <li><strong>免 API 金鑰地圖</strong>：整合開源 Leaflet.js 與 OpenStreetMap 網頁地圖，操作流暢、縮放自如。</li>
+                            <li><strong>一鍵導航</strong>：整合 Google 地圖導航 API，手機點選即可直接喚醒 Google Maps App 開始導航。</li>
+                        </ul>
+                    </div>
+
+                    <div class="meta-info">
+                        <p>原始資料來源：<a href="https://data.gov.tw/dataset/7040" target="_blank" rel="noopener noreferrer">政府資料開放平臺 (ID: 7040)</a></p>
+                        <p>授權條款：政府資料開放授權條款－第 1 版</p>
+                        <p>專案開源網址：<a href="https://github.com" target="_blank" id="repo-link">GitHub 儲存庫</a></p>
+                    </div>
+                </div>
+
+                <!-- 里程樁二級列表分頁 (點選省道後切換至此) -->
+                <div id="content-milestones" class="tab-content milestone-view">
+                    <div class="view-header">
+                        <button id="back-to-roads-btn" class="btn btn-text btn-icon">
+                            <i data-lucide="arrow-left"></i>
+                            <span id="active-road-title">返回公路列表</span>
+                        </button>
+                        <span class="badge" id="active-road-count">0 點</span>
+                    </div>
+                    <div class="search-box">
+                        <i data-lucide="filter" class="search-icon"></i>
+                        <input type="text" id="milestone-filter-input" placeholder="篩選里程、縣市或鄉鎮...">
+                        <button id="milestone-filter-clear" class="clear-btn hide"><i data-lucide="x"></i></button>
+                    </div>
+                    <!-- 里程樁清單 -->
+                    <ul id="milestone-list" class="interactive-list">
+                        <!-- 動態生成 -->
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右側面板 (Desktop 地圖與詳細資訊 / Mobile 地圖頁) -->
+        <main id="main-panel" class="main-panel">
+            <!-- 地圖區域 -->
+            <div id="map-container" class="map-container">
+                <!-- 覆蓋在地圖上的快速道路選擇器 (手機版地圖頁專用) -->
+                <div class="map-overlay-control" id="map-overlay-control">
+                    <select id="map-road-selector" class="dropdown-select">
+                        <option value="">-- 選擇省道繪製全部里程樁 --</option>
+                        <!-- 動態生成 -->
+                    </select>
+                </div>
+                <!-- Leaflet 地圖容器 -->
+                <div id="map"></div>
+            </div>
+
+            <!-- 詳細資訊面板 (Desktop 右下浮動卡片 / Mobile 詳情抽屜) -->
+            <section id="detail-panel" class="detail-panel hide">
+                <div class="detail-header">
+                    <div class="title-section">
+                        <h2 id="detail-road-name">台1線</h2>
+                        <div class="badge-code" id="detail-road-code">P0010</div>
+                    </div>
+                    <button id="close-detail-btn" class="close-btn" aria-label="關閉詳情"><i data-lucide="x"></i></button>
+                </div>
+
+                <div class="detail-body">
+                    <!-- 里程與設置位置 -->
+                    <div class="milestone-hero">
+                        <div class="milestone-number">
+                            <span class="k-part" id="detail-k">0</span><span class="unit">K</span>
+                            <span class="plus">+</span>
+                            <span class="m-part" id="detail-m">000</span>
+                        </div>
+                        <div class="position-tag" id="detail-position">道路中央</div>
+                    </div>
+
+                    <div class="detail-scroll">
+                        <!-- 詳細屬性列表 -->
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>隸屬縣市</label>
+                                <span id="detail-county">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>隸屬鄉鎮市區</label>
+                                <span id="detail-township">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>隸屬村里</label>
+                                <span id="detail-village">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>海拔高度 (Z)</label>
+                                <span id="detail-elevation">-</span>
+                            </div>
+                            <div class="detail-item span-2">
+                                <label>地理座標 (WGS84)</label>
+                                <span id="detail-coords" class="coords-text">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>牌面方向</label>
+                                <span id="detail-direction">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>牌面現況</label>
+                                <span id="detail-status">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>工務管轄</label>
+                                <span id="detail-office">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>調查日期</label>
+                                <span id="detail-date">-</span>
+                            </div>
+                            <div class="detail-item span-2" id="detail-notes-container">
+                                <label>備註</label>
+                                <span id="detail-notes">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按鈕 -->
+                    <div class="detail-actions">
+                        <button id="copy-coords-btn" class="btn btn-secondary btn-icon flex-1">
+                            <i data-lucide="copy"></i>
+                            <span>複製座標</span>
+                        </button>
+                        <button id="navigate-btn" class="btn btn-primary btn-icon flex-1">
+                            <i data-lucide="navigation"></i>
+                            <span>開始導航</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 手機版底部 Tab 導覽列 -->
+        <nav id="mobile-tab-bar" class="mobile-tab-bar">
+            <button id="mobile-tab-roads-btn" class="mobile-tab active" data-target="roads">
+                <i data-lucide="route"></i>
+                <span>公路列表</span>
+            </button>
+            <button id="mobile-tab-map-btn" class="mobile-tab" data-target="map">
+                <i data-lucide="map"></i>
+                <span>地圖檢視</span>
+            </button>
+            <button id="mobile-tab-search-btn" class="mobile-tab" data-target="search">
+                <i data-lucide="search"></i>
+                <span>快速搜尋</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Leaflet.js Map Library -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+            
+    <!-- PapaParse CSV Parser Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- Lucide Icons Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom Application Logic -->
+    <script src="js/app.js" defer></script>
+</body>
+</html>
