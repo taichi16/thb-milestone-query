@@ -28,15 +28,27 @@ jobs:
 
       - name: 偵測資料變更並提交
         run: |
-          # 檢查是否有檔案變動 (data/data.csv 或 metadata.json)
-          if [ -n "$(git status --porcelain)" ]; then
+          # 檢查目標檔案是否有實質變動 (data/data.csv 或 metadata.json)
+          if [ -n "$(git status --porcelain data/data.csv metadata.json)" ]; then
             echo "偵測到里程數據更新，準備提交變更..."
             git config --global user.name "github-actions[bot]"
             git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add data/data.csv metadata.json
             git commit -m "chore(data): 自動同步政府最新省道里程座標數據"
-            git push
-            echo "最新里程數據已成功更新並提交至儲存庫！"
+            
+            # 加入重試機制防範 GitHub 暫態錯誤
+            for i in 1 2 3; do
+              echo "正在推送變更至儲存庫 (嘗試 $i/3)..."
+              git pull --rebase origin main || true
+              if git push origin main; then
+                echo "最新里程數據已成功更新並提交至儲存庫！"
+                exit 0
+              fi
+              echo "Push 失敗，等候 3 秒後重試..."
+              sleep 3
+            done
+            echo "Push 重試 3 次仍失敗，請確認儲存庫狀態與權限。"
+            exit 1
           else
-            echo "線上資料與本地一致，無須更新。"
+            echo "線上資料與本地一致，無須更新與提交。"
           fi

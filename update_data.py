@@ -127,13 +127,7 @@ def main():
         except Exception as e:
             print(f"下載或寫入資料時發生錯誤: {e}")
     else:
-        print("資料已是最新版，無需更新。")
-        
-        # 僅更新最後檢查時間
-        local_metadata["last_checked"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(local_metadata, f, ensure_ascii=False, indent=2)
-        print("已更新 metadata.json 中的檢查時間。")
+        print(f"資料已是最新版 (MD5: {online_md5})，無需更新。")
 
 if __name__ == "__main__":
     main()
