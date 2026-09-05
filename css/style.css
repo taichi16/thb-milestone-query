@@ -1,11 +1,56 @@
 /* 
    省道里程樁查詢系統 CSS 樣式表 (style.css)
-   採用 Slate-Teal 現代深色高質感主題
+   支援高質感現代淺色模式 (預設) 與深色模式
    支援 RWD 響應式佈局 (Mobile & Desktop)
 */
 
 :root {
-    /* 顏色系統 */
+    /* 顏色系統 (預設：現代高質感淺色模式 Light Mode) */
+    --bg-primary: #f8fafc;       /* Slate 50 */
+    --bg-secondary: #ffffff;     /* Pure White */
+    --bg-tertiary: #f1f5f9;      /* Slate 100 */
+    --border-color: #e2e8f0;     /* Slate 200 */
+    --border-light: #f8fafc;
+    
+    --text-primary: #0f172a;     /* Slate 900 */
+    --text-secondary: #475569;   /* Slate 600 */
+    --text-muted: #94a3b8;       /* Slate 400 */
+    
+    --accent-color: #0284c7;     /* Sky 600 */
+    --accent-hover: #0369a1;     /* Sky 700 */
+    --accent-light: rgba(2, 132, 199, 0.1);
+    
+    --success-color: #059669;    /* Emerald 600 */
+    --success-light: rgba(5, 150, 105, 0.1);
+    --warning-color: #d97706;    /* Amber 600 */
+    
+    --card-bg-glass: rgba(255, 255, 255, 0.95);
+    
+    /* 陰影與圓角 */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    --shadow-glow: 0 0 15px rgba(2, 132, 199, 0.25);
+    
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    
+    /* 字型大小 */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    
+    /* 轉場動畫 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+    /* 深色主題 Dark Mode */
     --bg-primary: #0f172a;       /* Slate 900 */
     --bg-secondary: #1e293b;     /* Slate 800 */
     --bg-tertiary: #0f172a;      /* Slate 900 for inner content */
@@ -24,29 +69,12 @@
     --success-light: rgba(16, 185, 129, 0.15);
     --warning-color: #f59e0b;    /* Amber 500 */
     
-    --card-bg-glass: rgba(30, 41, 59, 0.8);
+    --card-bg-glass: rgba(30, 41, 59, 0.9);
     
-    /* 陰影與圓角 */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
     --shadow-glow: 0 0 15px rgba(6, 182, 212, 0.3);
-    
-    --radius-sm: 6px;
-    --radius-md: 12px;
-    --radius-lg: 18px;
-    
-    /* 字型大小 */
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-base: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.25rem;
-    --font-size-2xl: 1.5rem;
-    
-    /* 轉場動畫 */
-    --transition-fast: 0.15s ease;
-    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 全域重設與基本樣式 */
@@ -235,12 +263,18 @@ a:hover {
 .version-status {
     padding: 8px 20px;
     font-size: var(--font-size-xs);
-    background-color: rgba(15, 23, 42, 0.4);
+    background-color: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
     color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* 按鈕樣式 */
@@ -264,7 +298,7 @@ a:hover {
 
 .btn-primary {
     background-color: var(--accent-color);
-    color: var(--bg-primary);
+    color: #ffffff;
 }
 .btn-primary:hover {
     background-color: var(--accent-hover);
@@ -272,12 +306,12 @@ a:hover {
 }
 
 .btn-secondary {
-    background-color: rgba(51, 65, 85, 0.5);
+    background-color: var(--bg-tertiary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
 .btn-secondary:hover {
-    background-color: rgba(51, 65, 85, 0.8);
+    background-color: var(--border-color);
 }
 
 .btn-text {
@@ -286,7 +320,7 @@ a:hover {
     padding: 6px 12px;
 }
 .btn-text:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--bg-tertiary);
 }
 
 .btn-icon {
@@ -307,7 +341,7 @@ a:hover {
 .panel-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-color);
-    background-color: rgba(15, 23, 42, 0.2);
+    background-color: var(--bg-tertiary);
 }
 
 .panel-tab {
@@ -334,13 +368,13 @@ a:hover {
 
 .panel-tab:hover {
     color: var(--text-primary);
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--accent-light);
 }
 
 .panel-tab.active {
     color: var(--accent-color);
     border-bottom-color: var(--accent-color);
-    background-color: rgba(6, 182, 212, 0.05);
+    background-color: var(--accent-light);
 }
 
 /* 分頁內容 */
@@ -430,7 +464,7 @@ a:hover {
 .search-results-summary {
     padding: 8px 16px;
     font-size: var(--font-size-xs);
-    background-color: rgba(15, 23, 42, 0.3);
+    background-color: var(--bg-tertiary);
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-color);
 }
@@ -444,7 +478,7 @@ a:hover {
 
 .interactive-list li {
     padding: 14px 20px;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+    border-bottom: 1px solid var(--border-color);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
@@ -454,8 +488,8 @@ a:hover {
 }
 
 .interactive-list li:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-    border-left-color: var(--border-color);
+    background-color: var(--accent-light);
+    border-left-color: var(--accent-color);
 }
 
 .interactive-list li.active {
@@ -491,8 +525,9 @@ a:hover {
 }
 
 .badge {
-    background-color: rgba(51, 65, 85, 0.6);
+    background-color: var(--bg-tertiary);
     color: var(--text-secondary);
+    border: 1px solid var(--border-color);
     padding: 2px 8px;
     border-radius: 12px;
     font-size: var(--font-size-xs);
@@ -501,7 +536,8 @@ a:hover {
 
 .active .badge {
     background-color: var(--accent-color);
-    color: var(--bg-primary);
+    color: #ffffff;
+    border-color: var(--accent-color);
 }
 
 /* 二級里程樁列表視圖 */
@@ -543,7 +579,7 @@ a:hover {
 }
 
 .info-card {
-    background-color: rgba(15, 23, 42, 0.4);
+    background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 20px;
@@ -639,7 +675,7 @@ a:hover {
     border-color: var(--accent-color);
 }
 
-/* Leaflet 地圖樣式微調 (符合深色主題) */
+/* Leaflet 地圖樣式微調 */
 .leaflet-container {
     font-family: inherit !important;
 }
@@ -647,6 +683,8 @@ a:hover {
 .leaflet-bar {
     border: 1px solid var(--border-color) !important;
     box-shadow: var(--shadow-md) !important;
+    border-radius: var(--radius-sm) !important;
+    overflow: hidden;
 }
 
 .leaflet-bar a {
@@ -657,7 +695,28 @@ a:hover {
 }
 
 .leaflet-bar a:hover {
-    background-color: var(--border-color) !important;
+    background-color: var(--bg-tertiary) !important;
+    color: var(--accent-color) !important;
+}
+
+/* 圖層切換器樣式 */
+.leaflet-control-layers {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-lg) !important;
+    font-size: var(--font-size-xs) !important;
+    padding: 8px 12px !important;
+}
+
+.leaflet-control-layers-toggle {
+    background-color: var(--bg-secondary) !important;
+}
+
+.leaflet-control-layers-expanded {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -674,9 +733,18 @@ a:hover {
 }
 
 .leaflet-popup-content {
-    margin: 12px 16px !important;
+    margin: 14px 18px !important;
     font-size: var(--font-size-sm);
     line-height: 1.5;
+}
+
+.leaflet-popup-close-button {
+    color: var(--text-secondary) !important;
+    padding: 8px 8px 0 0 !important;
+}
+
+.leaflet-popup-close-button:hover {
+    color: var(--text-primary) !important;
 }
 
 /* 詳細資料面板 (Floating Card on Desktop / Bottom Drawer on Mobile) */
@@ -779,8 +847,8 @@ a:hover {
 
 /* 里程大看板 */
 .milestone-hero {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
-    border: 1px solid rgba(6, 182, 212, 0.2);
+    background: linear-gradient(135deg, var(--accent-light) 0%, rgba(16, 185, 129, 0.08) 100%);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 16px;
     margin-bottom: 16px;
@@ -843,7 +911,7 @@ a:hover {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 10px;
 }
 

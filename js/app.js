@@ -58,21 +58,24 @@ let currentRoad = null;       // 當前選取的省道名稱
 const activeIcon = L.divIcon({
     className: 'custom-pin-active',
     html: `<div style="
-        width: 16px; 
-        height: 16px; 
-        background-color: #06b6d4; 
-        border: 3px solid #f8fafc; 
+        width: 18px; 
+        height: 18px; 
+        background-color: #0284c7; 
+        border: 3px solid #ffffff; 
         border-radius: 50%;
-        box-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+        box-shadow: 0 0 12px rgba(2, 132, 199, 0.8), 0 2px 6px rgba(0, 0, 0, 0.3);
     "></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8]
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
 });
 
 // ==========================================================================
 // 3. 初始化與資料載入流程
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // 初始化深淺色主題 (預設淺色)
+    initTheme();
+    
     // 渲染 Lucide 圖標
     lucide.createIcons();
     
@@ -165,9 +168,17 @@ async function loadDataFlow() {
         
     } catch (error) {
         console.error("載入資料流失敗:", error);
-        loadingStatus.textContent = "載入失敗，請確認網路連線並重新整理網頁！";
-        loadingStatus.style.color = "#ef4444";
-        document.getElementById('loading-title').textContent = "系統載入錯誤";
+        if (window.location.protocol === 'file:') {
+            document.getElementById('loading-title').textContent = "請透過本地伺服器開啟";
+            document.getElementById('loading-subtitle').innerHTML = 
+                "因瀏覽器安全性限制 (CORS)，直接雙擊檔案 (<code>file://</code>) 無法讀取資料檔。<br><br>我們已在本地為您啟動伺服器，請改由以下連結開啟：<br><br><a href='http://localhost:8080' style='display:inline-block; padding:8px 16px; background:var(--accent-color); color:#fff; border-radius:8px; font-weight:bold; text-decoration:none;'>👉 點此前往 http://localhost:8080</a><br><br><span style='font-size:12px; color:var(--text-muted);'>（推送到 GitHub 後，在 GitHub Pages 則可直接正常開啟）</span>";
+            loadingStatus.textContent = "瀏覽器 CORS 安全策略限制";
+            loadingStatus.style.color = "#f59e0b";
+        } else {
+            loadingStatus.textContent = "載入失敗，請確認網路連線並重新整理網頁！";
+            loadingStatus.style.color = "#ef4444";
+            document.getElementById('loading-title').textContent = "系統載入錯誤";
+        }
     }
 }
 
@@ -267,12 +278,27 @@ function initMap() {
         attributionControl: true
     }).setView([23.7, 120.95], 8);
     
-    // 載入 CartoDB Dark Matter 深色質感地圖圖資
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-    }).addTo(map);
+    // 1. 臺灣通用電子地圖 (NLSC EMAP) - 專為台灣路網打造、全中文清晰標註、高對比且無浮水印
+    const emapLayer = L.tileLayer('https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}', {
+        attribution: '&copy; <a href="https://maps.nlsc.gov.tw/" target="_blank" rel="noopener noreferrer">國土測繪圖資服務雲</a>',
+        maxZoom: 19
+    });
+    
+    // 2. OpenStreetMap (OSM) 標準國際圖資
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
+        maxZoom: 19
+    });
+
+    // 預設啟用臺灣通用電子地圖
+    emapLayer.addTo(map);
+
+    // 加入右上角圖層切換器
+    const baseLayers = {
+        "臺灣通用電子圖 (清晰)": emapLayer,
+        "OpenStreetMap 街圖": osmLayer
+    };
+    L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
 }
 
 /**
@@ -306,12 +332,20 @@ function focusMilestoneOnMap(item) {
     
     // 彈出資訊視窗
     marker.bindPopup(`
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px; color:#06b6d4;">
+        <div style="font-weight:700; font-size:15px; margin-bottom:6px; color:var(--accent-color);">
             ${item.road} ${item.milestone}
         </div>
-        <div>縣市：${item.county}${item.township}</div>
-        <div>海拔：${item.elevation} m</div>
-        <div style="margin-top:6px;"><a href="javascript:void(0)" onclick="window.appShowDetail(${item.id})" style="color:#06b6d4; font-weight:bold;">查看詳細資訊 &rarr;</a></div>
+        <div style="font-size:13px; margin-bottom:3px; color:var(--text-secondary);">
+            縣市：<strong style="color:var(--text-primary); font-weight:600;">${item.county}${item.township}</strong>
+        </div>
+        <div style="font-size:13px; margin-bottom:3px; color:var(--text-secondary);">
+            海拔：<strong style="color:var(--text-primary); font-weight:600;">${item.elevation} m</strong>
+        </div>
+        <div style="margin-top:8px;">
+            <a href="javascript:void(0)" onclick="window.appShowDetail(${item.id})" style="color:var(--accent-color); font-weight:700; font-size:13px; text-decoration:none;">
+                查看詳細資訊 &rarr;
+            </a>
+        </div>
     `).openPopup();
     
     activeMarkers.push(marker);
@@ -347,18 +381,18 @@ function drawRoadRouteOnMap(roadName) {
         // 建立精簡圓點標記，避免地圖太擁擠
         const circleMarker = L.circleMarker(latLng, {
             radius: 5,
-            fillColor: '#06b6d4',
+            fillColor: '#0284c7',
             color: '#ffffff',
             weight: 1.5,
-            opacity: 0.8,
-            fillOpacity: 0.9
+            opacity: 0.9,
+            fillOpacity: 0.95
         }).addTo(map);
         
         // 綁定地圖 Popup
         circleMarker.bindPopup(`
-            <div style="font-weight:bold; font-size:13px; color:#06b6d4;">${item.road} ${item.milestone}</div>
-            <div style="font-size:12px;">座標：${item.lat.toFixed(5)}, ${item.lon.toFixed(5)}</div>
-            <div style="margin-top:4px;"><a href="javascript:void(0)" onclick="window.appSelectMilestone(${item.id})" style="color:#06b6d4; font-weight:bold;">選擇此點 &rarr;</a></div>
+            <div style="font-weight:700; font-size:14px; color:var(--accent-color); margin-bottom:4px;">${item.road} ${item.milestone}</div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:6px;">座標：${item.lat.toFixed(5)}, ${item.lon.toFixed(5)}</div>
+            <div><a href="javascript:void(0)" onclick="window.appSelectMilestone(${item.id})" style="color:var(--accent-color); font-weight:700; font-size:13px; text-decoration:none;">選擇此點 &rarr;</a></div>
         `);
         
         activeMarkers.push(circleMarker);
@@ -366,10 +400,10 @@ function drawRoadRouteOnMap(roadName) {
     
     // 連接里程點，繪製路網折線
     routePolyline = L.polyline(latLngs, {
-        color: '#06b6d4',
+        color: '#0284c7',
         weight: 4,
-        opacity: 0.6,
-        dashArray: '2, 6' // 虛線效果增加設計感
+        opacity: 0.75,
+        dashArray: '3, 6' // 虛線效果增加設計感
     }).addTo(map);
     
     // 自動調整地圖範圍以包含整條公路
@@ -1001,4 +1035,39 @@ function bindEvents() {
     document.getElementById('update-btn').addEventListener('click', () => {
         checkAndExecuteUpdate();
     });
+
+    // 12. 深淺色主題切換按鈕
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            toggleTheme();
+        });
+    }
+}
+
+// ==========================================================================
+// 8. 主題管理模組 (深淺色切換與偏好儲存)
+// ==========================================================================
+function initTheme() {
+    const savedTheme = localStorage.getItem('thb_theme') || 'light';
+    applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+    const icon = document.getElementById('theme-icon');
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        if (icon) icon.setAttribute('data-lucide', 'sun');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        if (icon) icon.setAttribute('data-lucide', 'moon');
+    }
+    lucide.createIcons();
+    localStorage.setItem('thb_theme', theme);
+}
+
+function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    applyTheme(newTheme);
 }
